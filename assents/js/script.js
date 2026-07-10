@@ -113,6 +113,7 @@ async function fetchFromGoogleDrive() {
     throw new Error("Arquivo 'PRODUTOS.xlsx' não foi encontrado na pasta informada.");
   }
 
+  // Acessa o ID do primeiro arquivo encontrado na lista
   const fileId = arquivos[0].id;
   atualizarStatus("Baixando arquivo Excel...");
 
@@ -130,7 +131,7 @@ async function fetchFromGoogleDrive() {
 
   // 4) Processa o arquivo Excel no Front-end via biblioteca XLSX
   const workbook = XLSX.read(new Uint8Array(arrayBuffer), { type: "array" });
-  const primeiraAbaNome = workbook.SheetNames[0];
+  const primeiraAbaNome = workbook.SheetNames[0]; // Seleciona a primeira aba disponível
   const aba = workbook.Sheets[primeiraAbaNome];
   
   // Converte a primeira aba em um Array de Objetos JSON
