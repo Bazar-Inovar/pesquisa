@@ -89,8 +89,9 @@ async function fetchFromGoogleDrive() {
     throw new Error("Arquivo 'PRODUTOS.xlsx' não foi encontrado na pasta informada.");
   }
 
-  // CORREÇÃO AQUI: Adicionado os colchetes [0] para pegar o primeiro arquivo da lista corretamente
-  const fileId = arquivos[0].id;
+  // Modificado para usar .at(0) para evitar o sumiço dos colchetes pelo chat
+  const primeiroArquivo = arquivos.at(0);
+  const fileId = primeiroArquivo.id;
   atualizarStatus("Baixando arquivo Excel...");
 
   // 2) Baixa o conteúdo do arquivo binário direto por requisição nativa
@@ -108,8 +109,8 @@ async function fetchFromGoogleDrive() {
   // 3) Converte o Excel em JSON no navegador usando a biblioteca carregada no HTML
   const workbook = XLSX.read(new Uint8Array(arrayBuffer), { type: "array" });
   
-  // CORREÇÃO AQUI: Adicionado os colchetes [0] para pegar a primeira aba da planilha
-  const primeiraAbaNome = workbook.SheetNames[0]; 
+  // Modificado para usar .at(0) para evitar o sumiço dos colchetes pelo chat
+  const primeiraAbaNome = workbook.SheetNames.at(0); 
   const aba = workbook.Sheets[primeiraAbaNome];
   
   const jsonBruto = XLSX.utils.sheet_to_json(aba);
