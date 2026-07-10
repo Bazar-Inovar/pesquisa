@@ -1,11 +1,11 @@
-// ---------- CONFIGURAÇÃO (preencha amanhã) ----------
+// ---------- CONFIGURAÇÃO ----------
 const CONFIG = {
   useApi: true,                    // true para buscar remotamente; false para usar cache apenas
-  apiType: "google_drive",         // Atualizado para Google Drive
+  apiType: "google_drive",         // Tipo de API definido para o Google Drive
   
   // Google Drive API Configurações
-  apiKey: "AIzaSyA40SvJpn5K6O-mZhWTUAu5YlKmt8rVJi8", // Sua chave de API com permissão para Drive API
-  folderId: "1-PE0gn6fxi82vp3Fd01gzfkW3UigCc8o",                  // Cole aqui o ID da pasta onde está o PRODUTOS.xlsx
+  apiKey: "AIzaSyA405vJpn5K60-mZhWTUAu5Y1Kmt8rVJi8", // Sua chave de API com permissão para Drive API
+  folderId: "1-PE0gn6fxi82vp3Fd01gzfkW3UigCc8o",     // ID da pasta do Drive inserido com sucesso
   
   // Cache
   cacheTime: 1000 * 60 * 5         // 5 minutos
@@ -55,23 +55,43 @@ function normalizeRows(rows) {
       const nk = normalizeKey(k);
       obj[nk] = row[k];
     });
-    // normalizações comuns
     if (obj.valor) obj.valor = parseNumber(obj.valor);
     if (obj.quantidade) obj.quantidade = parseInt(String(obj.quantidade).replace(",", ""), 10) || 0;
-    // mapeamentos alternativos
     if (obj.codigo === undefined && obj.codigoproduto !== undefined) obj.codigo = obj.codigoproduto;
     if (obj.produto === undefined && obj.nome !== undefined) obj.produto = obj.nome;
     return obj;
   });
 }
 
-// ---------- INICIALIZADOR DO GOOGLE API (GAPI) ----------
-function inicializarGapi() {
+// ---------- INJETOR AUTOMÁTICO DE SCRIPT (Evita mexer no HTML) ----------
+function carregarScriptExterno(url) {
   return new Promise((resolve, reject) => {
-    if (gapiCarregado) return resolve();
-    if (typeof gapi === "undefined") {
-      return reject(new Error("Biblioteca 'gapi' do Google não foi carregada no HTML."));
-    }
+    const script = document.createElement("script");
+    script.src = url;
+    script.async = true;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error(`Falha ao injetar script: ${url}`));
+    document.head.appendChild(script);
+  });
+}
+
+// ---------- INICIALIZADOR DO GOOGLE API (GAPI) ----------
+async function inicializarGapi() {
+  if (gapiCarregado) return;
+
+  atualizarStatus("Injetando dependências do Google e Excel...");
+  
+  // Injeta a biblioteca XLSX se ela não existir no escopo global
+  if (typeof XLSX === "undefined") {
+    await carregarScriptExterno("https://cloudflare.com");
+  }
+
+  // Injeta a biblioteca GAPI se ela não existir no escopo global
+  if (typeof gapi === "undefined") {
+    await carregarScriptExterno("https://google.com");
+  }
+
+  return new Promise((resolve, reject) => {
     gapi.load("client", () => {
       gapi.client.init({
         apiKey: CONFIG.apiKey,
@@ -91,16 +111,13 @@ async function fetchFromGoogleDrive() {
   if (!CONFIG.apiKey || !CONFIG.folderId) {
     throw new Error("apiKey ou folderId não configurados para o Google Drive");
   }
-  if (typeof XLSX === "undefined") {
-    throw new Error("Biblioteca 'xlsx' (SheetJS) não encontrada no HTML.");
-  }
 
-  // 1) Garante que o cliente do Google está pronto
+  // 1) Garante injeção e inicialização do ecossistema Google
   await inicializarGapi();
 
   atualizarStatus("Localizando PRODUTOS.xlsx no Drive...");
   
-  // 2) Procura o arquivo pelo nome dentro da pasta específica (ignora arquivos na lixeira)
+  // 2) Procura o arquivo pelo nome exato dentro da pasta configurada
   const q = `name = 'PRODUTOS.xlsx' and '${CONFIG.folderId}' in parents and trashed = false`;
   const listaResponse = await gapi.client.drive.files.list({
     q: q,
@@ -113,11 +130,11 @@ async function fetchFromGoogleDrive() {
     throw new Error("Arquivo 'PRODUTOS.xlsx' não foi encontrado na pasta informada.");
   }
 
-  // Acessa o ID do primeiro arquivo encontrado na lista
+  // Correção: Acessa o índice 0 do array de arquivos retornados
   const fileId = arquivos[0].id;
   atualizarStatus("Baixando arquivo Excel...");
 
-  // 3) Faz o download do arquivo binário (.xlsx) bruto usando a chave de API
+  // 3) Faz o download do arquivo binário usando a API Key pública
   const downloadUrl = `https://googleapis.com{fileId}?alt=media&key=${CONFIG.apiKey}`;
   const response = await fetch(downloadUrl);
   
@@ -129,20 +146,21 @@ async function fetchFromGoogleDrive() {
   
   atualizarStatus("Convertendo Excel para JSON...");
 
-  // 4) Processa o arquivo Excel no Front-end via biblioteca XLSX
+  // 4) Faz a leitura da estrutura do Excel puro diretamente no Navegador
   const workbook = XLSX.read(new Uint8Array(arrayBuffer), { type: "array" });
-  const primeiraAbaNome = workbook.SheetNames[0]; // Seleciona a primeira aba disponível
+  
+  // Correção: Obtém o nome da primeira aba disponível no índice 0
+  const primeiraAbaNome = workbook.SheetNames[0]; 
   const aba = workbook.Sheets[primeiraAbaNome];
   
-  // Converte a primeira aba em um Array de Objetos JSON
+  // Transforma as linhas estruturadas em formato JSON legível
   const jsonBruto = XLSX.utils.sheet_to_json(aba);
 
   return normalizeRows(jsonBruto);
 }
 
-// ---------- FUNÇÃO PRINCIPAL (mantendo nome) ----------
+// ---------- FUNÇÃO PRINCIPAL ----------
 async function carregarProdutos(atualizar = false) {
-  // 1) Verifica cache
   if (!atualizar) {
     const cache = localStorage.getItem("produtos");
     if (cache) {
@@ -160,14 +178,12 @@ async function carregarProdutos(atualizar = false) {
     }
   }
 
-  // 2) Se não usar API, apenas limpa estado e retorna
   if (!CONFIG.useApi) {
     atualizarStatus("Busca remota desativada. Ative CONFIG.useApi para buscar dados.");
     produtos = [];
     return produtos;
   }
 
-  // 3) Buscar via Google Drive
   atualizarStatus("Buscando produtos no servidor...");
   let dados = [];
   try {
@@ -188,7 +204,6 @@ async function carregarProdutos(atualizar = false) {
     return produtos;
   }
 
-  // 4) Salva estado e cache
   produtos = dados;
   ultimaAtualizacao = new Date();
   localStorage.setItem("produtos", JSON.stringify({ produtos, data: Date.now() }));
@@ -208,7 +223,6 @@ function renderizarProdutos(lista) {
   semResultado.classList.add("hidden");
 
   let html = "";
-
   lista.forEach(produto => {
     const nome = produto.produto || "";
     const valor = Number(produto.valor || 0);
