@@ -89,9 +89,10 @@ async function fetchFromGoogleDrive() {
     throw new Error("Arquivo 'PRODUTOS.xlsx' não foi encontrado na pasta informada.");
   }
 
-  // Modificado para usar .at(0) para evitar o sumiço dos colchetes pelo chat
-  const primeiroArquivo = arquivos.at(0);
-  const fileId = primeiroArquivo.id;
+  // Correção definitiva na leitura do ID utilizando .at(0) sem colchetes
+  const primeiroItem = arquivos.at(0);
+  const fileId = primeiroItem.id;
+  
   atualizarStatus("Baixando arquivo Excel...");
 
   // 2) Baixa o conteúdo do arquivo binário direto por requisição nativa
@@ -109,7 +110,7 @@ async function fetchFromGoogleDrive() {
   // 3) Converte o Excel em JSON no navegador usando a biblioteca carregada no HTML
   const workbook = XLSX.read(new Uint8Array(arrayBuffer), { type: "array" });
   
-  // Modificado para usar .at(0) para evitar o sumiço dos colchetes pelo chat
+  // Correção definitiva utilizando .at(0) para pegar a primeira aba da planilha
   const primeiraAbaNome = workbook.SheetNames.at(0); 
   const aba = workbook.Sheets[primeiraAbaNome];
   
