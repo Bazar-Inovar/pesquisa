@@ -74,10 +74,11 @@ async function fetchFromGoogleDrive() {
 
   atualizarStatus("Localizando PRODUTOS.xlsx no Drive...");
   
-  // 1) Busca o arquivo na pasta usando uma requisição HTTP direta para o Google
-  const listUrl = `https://googleapis.com{encodeURIComponent(`name = 'PRODUTOS.xlsx' and '${CONFIG.folderId}' in parents and trashed = false`)}&key=${CONFIG.apiKey}`;
-  const listResponse = await fetch(listUrl);
+  // 1) Busca o arquivo na pasta usando string concatenada limpa (evita erros do interpretador)
+  const queryDrive = "name = 'produtos.xlsx' and '" + CONFIG.folderId + "' in parents and trashed = false";
+  const listUrl = "https://googleapis.com" + encodeURIComponent(queryDrive) + "&key=" + CONFIG.apiKey;
   
+  const listResponse = await fetch(listUrl);
   if (!listResponse.ok) {
     throw new Error("Falha ao conectar com o Google Drive. Verifique a sua apiKey.");
   }
@@ -89,14 +90,14 @@ async function fetchFromGoogleDrive() {
     throw new Error("Arquivo 'PRODUTOS.xlsx' não foi encontrado na pasta informada.");
   }
 
-  // Correção definitiva na leitura do ID utilizando .at(0) sem colchetes
+  // Extração segura do primeiro elemento retornado
   const primeiroItem = arquivos.at(0);
   const fileId = primeiroItem.id;
   
   atualizarStatus("Baixando arquivo Excel...");
 
-  // 2) Baixa o conteúdo do arquivo binário direto por requisição nativa
-  const downloadUrl = `https://googleapis.com{fileId}?alt=media&key=${CONFIG.apiKey}`;
+  // 2) Baixa o conteúdo do arquivo binário direto por requisição nativa sem chaves quebradas
+  const downloadUrl = "https://googleapis.com" + fileId + "?alt=media&key=" + CONFIG.apiKey;
   const response = await fetch(downloadUrl);
   
   if (!response.ok) {
@@ -110,7 +111,6 @@ async function fetchFromGoogleDrive() {
   // 3) Converte o Excel em JSON no navegador usando a biblioteca carregada no HTML
   const workbook = XLSX.read(new Uint8Array(arrayBuffer), { type: "array" });
   
-  // Correção definitiva utilizando .at(0) para pegar a primeira aba da planilha
   const primeiraAbaNome = workbook.SheetNames.at(0); 
   const aba = workbook.Sheets[primeiraAbaNome];
   
