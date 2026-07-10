@@ -2,21 +2,20 @@
 <html lang="pt-BR">
 
 <head>
-
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Consulta de Produtos</title>
     
     <link rel="website icon" type="png" href="./assents/imagens/logo.png">
     <link rel="stylesheet" href="./assents/css/estilos.css">
-    <link rel="stylesheet" href="./assents//css/responsivo.css">
+    <link rel="stylesheet" href="./assents/css/responsivo.css">
+    
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
 </head>
+
 <body>
 
     <!-- LOADING -->
@@ -42,7 +41,7 @@
                 <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" stroke="currentColor"
                     stroke-width="2" viewBox="0 0 24 24">
                     <circle cx="11" cy="11" r="8"></circle>
-                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    <line x1="21" x1="21" x2="16.65" y2="16.65"></line>
                 </svg>
                 <input type="text" id="pesquisa" placeholder="Digite o nome ou código...">
             </div>
@@ -74,12 +73,12 @@
             </div>
         </section>
     </main>
-    <!-- Biblioteca para ler o arquivo Excel (.xlsx) -->
+
+    <!-- 1) Biblioteca externa para ler o arquivo Excel (.xlsx) -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
-    <!-- O seu arquivo de lógica (com o truque para limpar o cache) -->
-    <script src="./assents/js/script.js?v=2"></script>
+    <!-- 2) Seu arquivo JavaScript atualizado (v=3 força a limpeza total do cache) -->
+    <script src="./assents/js/script.js?v=3"></script>
 
 </body>
-
 </html>
