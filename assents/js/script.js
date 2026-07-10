@@ -1,13 +1,12 @@
 // ---------- CONFIGURAÇÃO (preencha amanhã) ----------
 const CONFIG = {
   useApi: true,                    // true para buscar remotamente; false para usar cache apenas
-  apiType: "json_endpoint",        // "google_sheets" or "json_endpoint"
-  // Google Sheets API v4 (se apiType === "google_sheets")
-  sheetId: "1-PE0gn6fx82vp3Fd01gzfkW3UigCc80",
-  apiKey: "AIzaSyA405vJpn5K60-mZhWTUAu5Y1Kmt8rVJi8",
-  range: "A1:Z",                   // range a ser lido na Sheets API
-  // Endpoint JSON (se apiType === "json_endpoint")
-  endpointUrl: "https://api.seuservidor.com/produtos", // deve retornar array de objetos
+  apiType: "google_drive",         // Atualizado para Google Drive
+  
+  // Google Drive API Configurações
+  apiKey: "AIzaSyA405vJpn5K60-mZhWTUAu5Y1Kmt8rVJi8", // Sua chave de API com permissão para Drive API
+  folderId: "1-PE0gn6fxi82vp3Fd01gzfkW3UigCc8o",                  // Cole aqui o ID da pasta onde está o PRODUTOS.xlsx
+  
   // Cache
   cacheTime: 1000 * 60 * 5         // 5 minutos
 };
@@ -24,6 +23,7 @@ const semResultado = document.getElementById("semResultado");
 // ---------- ESTADO GLOBAL ----------
 let produtos = [];
 let ultimaAtualizacao = null;
+let gapiCarregado = false;
 
 // ---------- HELPERS ----------
 function normalizeKey(str) {
@@ -51,8 +51,6 @@ function atualizarStatus(texto) {
 function normalizeRows(rows) {
   return (rows || []).map(row => {
     const obj = {};
-    // Se row for array de valores com header separado, não coberto aqui.
-    // Assume row é objeto { "Código": "...", "Produto": "...", ... } ou já normalizado.
     Object.keys(row).forEach(k => {
       const nk = normalizeKey(k);
       obj[nk] = row[k];
@@ -67,47 +65,81 @@ function normalizeRows(rows) {
   });
 }
 
-// ---------- FETCH: Google Sheets API v4 ----------
-async function fetchFromGoogleSheets() {
-  if (!CONFIG.sheetId || !CONFIG.apiKey) {
-    throw new Error("sheetId ou apiKey não configurados para Google Sheets");
-  }
-  const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.sheetId}/values/${encodeURIComponent(CONFIG.range)}?key=${CONFIG.apiKey}`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error("Erro ao acessar Google Sheets API");
-  const json = await res.json();
-  const [headerRow, ...rows] = json.values || [];
-  if (!headerRow) return [];
-  const headers = headerRow.map(h => normalizeKey(h));
-  const data = rows.map(r => {
-    const obj = {};
-    headers.forEach((h, i) => {
-      obj[h] = r[i] ?? "";
+// ---------- INICIALIZADOR DO GOOGLE API (GAPI) ----------
+function inicializarGapi() {
+  return new Promise((resolve, reject) => {
+    if (gapiCarregado) return resolve();
+    if (typeof gapi === "undefined") {
+      return reject(new Error("Biblioteca 'gapi' do Google não foi carregada no HTML."));
+    }
+    gapi.load("client", () => {
+      gapi.client.init({
+        apiKey: CONFIG.apiKey,
+        discoveryDocs: ["https://googleapis.com"],
+      })
+      .then(() => {
+        gapiCarregado = true;
+        resolve();
+      })
+      .catch(err => reject(err));
     });
-    return obj;
   });
-  return normalizeRows(data);
 }
 
-// ---------- FETCH: Endpoint JSON genérico ----------
-async function fetchFromJsonEndpoint() {
-  if (!CONFIG.endpointUrl) throw new Error("endpointUrl não configurado");
-  const res = await fetch(CONFIG.endpointUrl, { cache: "no-store" });
-  if (!res.ok) throw new Error("Erro ao acessar endpoint JSON");
-  const json = await res.json();
-  // espera-se que json seja um array de objetos
-  if (!Array.isArray(json)) {
-    throw new Error("Resposta do endpoint não é um array");
+// ---------- FETCH: Google Drive (Busca, Download e Conversão XLSX) ----------
+async function fetchFromGoogleDrive() {
+  if (!CONFIG.apiKey || !CONFIG.folderId) {
+    throw new Error("apiKey ou folderId não configurados para o Google Drive");
   }
-  return normalizeRows(json);
+  if (typeof XLSX === "undefined") {
+    throw new Error("Biblioteca 'xlsx' (SheetJS) não encontrada no HTML.");
+  }
+
+  // 1) Garante que o cliente do Google está pronto
+  await inicializarGapi();
+
+  atualizarStatus("Localizando PRODUTOS.xlsx no Drive...");
+  
+  // 2) Procura o arquivo pelo nome dentro da pasta específica (ignora arquivos na lixeira)
+  const q = `name = 'PRODUTOS.xlsx' and '${CONFIG.folderId}' in parents and trashed = false`;
+  const listaResponse = await gapi.client.drive.files.list({
+    q: q,
+    fields: "files(id, name)",
+    pageSize: 1
+  });
+
+  const arquivos = listaResponse.result.files;
+  if (!arquivos || arquivos.length === 0) {
+    throw new Error("Arquivo 'PRODUTOS.xlsx' não foi encontrado na pasta informada.");
+  }
+
+  const fileId = arquivos[0].id;
+  atualizarStatus("Baixando arquivo Excel...");
+
+  // 3) Faz o download do arquivo binário (.xlsx) bruto usando a chave de API
+  const downloadUrl = `https://googleapis.com{fileId}?alt=media&key=${CONFIG.apiKey}`;
+  const response = await fetch(downloadUrl);
+  
+  if (!response.ok) {
+    throw new Error("Falha ao baixar o arquivo binário do Drive.");
+  }
+
+  const arrayBuffer = await response.arrayBuffer();
+  
+  atualizarStatus("Convertendo Excel para JSON...");
+
+  // 4) Processa o arquivo Excel no Front-end via biblioteca XLSX
+  const workbook = XLSX.read(new Uint8Array(arrayBuffer), { type: "array" });
+  const primeiraAbaNome = workbook.SheetNames[0];
+  const aba = workbook.Sheets[primeiraAbaNome];
+  
+  // Converte a primeira aba em um Array de Objetos JSON
+  const jsonBruto = XLSX.utils.sheet_to_json(aba);
+
+  return normalizeRows(jsonBruto);
 }
 
 // ---------- FUNÇÃO PRINCIPAL (mantendo nome) ----------
-/*
-  carregarProdutos(atualizar = false)
-  - busca dados remotos quando CONFIG.useApi = true
-  - usa cache local quando disponível e dentro do tempo
-*/
 async function carregarProdutos(atualizar = false) {
   // 1) Verifica cache
   if (!atualizar) {
@@ -127,23 +159,21 @@ async function carregarProdutos(atualizar = false) {
     }
   }
 
-  // 2) Se não usar API, apenas limpa estado e retorna (sem upload local)
+  // 2) Se não usar API, apenas limpa estado e retorna
   if (!CONFIG.useApi) {
     atualizarStatus("Busca remota desativada. Ative CONFIG.useApi para buscar dados.");
     produtos = [];
     return produtos;
   }
 
-  // 3) Buscar via API conforme tipo configurado
+  // 3) Buscar via Google Drive
   atualizarStatus("Buscando produtos no servidor...");
   let dados = [];
   try {
-    if (CONFIG.apiType === "google_sheets") {
-      dados = await fetchFromGoogleSheets();
-    } else if (CONFIG.apiType === "json_endpoint") {
-      dados = await fetchFromJsonEndpoint();
+    if (CONFIG.apiType === "google_drive") {
+      dados = await fetchFromGoogleDrive();
     } else {
-      throw new Error("CONFIG.apiType inválido. Use 'google_sheets' ou 'json_endpoint'.");
+      throw new Error("CONFIG.apiType inválido. Use 'google_drive'.");
     }
   } catch (err) {
     atualizarStatus(`Erro ao buscar dados: ${err.message}`);
@@ -151,7 +181,7 @@ async function carregarProdutos(atualizar = false) {
   }
 
   if (!dados || dados.length === 0) {
-    atualizarStatus("Nenhum dado retornado da API.");
+    atualizarStatus("Nenhum dado retornado do arquivo.");
     produtos = [];
     localStorage.setItem("produtos", JSON.stringify({ produtos, data: Date.now() }));
     return produtos;
@@ -253,9 +283,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 // ---------- FUNÇÕES DE UI ----------
 function mostrarLoading() {
   if (loading) loading.classList.remove("hidden");
-  if (app) app.classList.add("hidden");
 }
+
 function esconderLoading() {
   if (loading) loading.classList.add("hidden");
-  if (app) app.classList.remove("hidden");
 }
