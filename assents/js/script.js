@@ -63,7 +63,7 @@ function normalizeRows(rows) {
   });
 }
 
-// ---------- INJETOR AUTOMÁTICO DE SCRIPT (Evita mexer no HTML) ----------
+// ---------- INJETOR AUTOMÁTICO DE SCRIPT ----------
 function carregarScriptExterno(url) {
   return new Promise((resolve, reject) => {
     const script = document.createElement("script");
@@ -86,7 +86,7 @@ async function inicializarGapi() {
     await carregarScriptExterno("https://cloudflare.com");
   }
 
-  // Injeta a biblioteca GAPI se ela não existir no escopo global
+  // Injeta a biblioteca GAPI oficial correta se ela não existir
   if (typeof gapi === "undefined") {
     await carregarScriptExterno("https://google.com");
   }
@@ -130,7 +130,7 @@ async function fetchFromGoogleDrive() {
     throw new Error("Arquivo 'PRODUTOS.xlsx' não foi encontrado na pasta informada.");
   }
 
-  // Correção: Acessa o índice 0 do array de arquivos retornados
+  // Ajustado com [0] para pegar o primeiro arquivo retornado
   const fileId = arquivos[0].id;
   atualizarStatus("Baixando arquivo Excel...");
 
@@ -149,7 +149,7 @@ async function fetchFromGoogleDrive() {
   // 4) Faz a leitura da estrutura do Excel puro diretamente no Navegador
   const workbook = XLSX.read(new Uint8Array(arrayBuffer), { type: "array" });
   
-  // Correção: Obtém o nome da primeira aba disponível no índice 0
+  // Ajustado com [0] para obter o nome da primeira aba disponível
   const primeiraAbaNome = workbook.SheetNames[0]; 
   const aba = workbook.Sheets[primeiraAbaNome];
   
