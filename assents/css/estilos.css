@@ -1,0 +1,253 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+body {
+    font-family: 'Poppins', sans-serif;
+    background: #edeffc;
+    color: #3a4e67;
+    min-height: 100vh;
+}
+:root {
+    --primaria: #3a4e67;
+    --secundaria: #edeffc;
+    --branco: #ffffff;
+    --verde: #28a745;
+    --vermelho: #dc3545;
+    --cinza: #bfc6d4;
+    --sombra: 0 8px 25px rgba(0, 0, 0, .08);
+    --radius: 14px;
+    --transition: .25s;
+}
+
+#loading {
+    position: fixed;
+    inset: 0;
+    background: var(--secundaria);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+#loading h2 {
+    margin-top: 25px;
+    font-size: 22px;
+    color: var(--primaria);
+}
+
+#loading span {
+    margin-top: 8px;
+    color: #6c7789;
+}
+
+.spinner {
+    width: 65px;
+    height: 65px;
+    border-radius: 50%;
+    border: 6px solid #d8deef;
+    border-top: 6px solid var(--primaria);
+    animation: spin .8s linear infinite;
+}
+@keyframes spin {
+    to {
+        transform: rotate(360deg)
+    }
+}
+
+
+.hidden {
+    display: none !important;
+}
+main {
+    width: min(1200px, 95%);
+    margin: auto;
+    padding: 35px 0 50px;
+}
+header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    margin-bottom: 35px;
+}
+
+.logo {
+    width: 180px;
+    border-radius: 50%;
+    margin-bottom: 20px;
+    object-fit: contain;
+}
+
+header h1 {
+    font-size: 34px;
+    font-weight: 700;
+    color: var(--primaria);
+}
+
+header p {
+    margin-top: 10px;
+    color: #6c7789;
+}
+.pesquisa {
+    margin-bottom: 30px;
+}
+.inputPesquisa {
+    background: white;
+    border-radius: 15px;
+    box-shadow: var(--sombra);
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    transition: .3s;
+}
+.inputPesquisa:focus-within {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 30px rgba(58, 78, 103, .18);
+}
+.inputPesquisa svg {
+    color: var(--primaria);
+    margin-right: 12px;
+}
+
+.inputPesquisa input {
+    width: 100%;
+    border: none;
+    outline: none;
+    background: none;
+    height: 60px;
+    font-size: 17px;
+    font-family: 'Poppins';
+    color: var(--primaria);
+}
+.inputPesquisa input::placeholder {
+    color: #9ba4b3;
+}
+
+/*STATUS*/
+#statusSistema {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+#statusTexto {
+    color: #6c7789;
+    font-size: 15px;
+}
+#btnAtualizar {
+    border: none;
+    cursor: pointer;
+    background: var(--primaria);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 12px;
+    font-family: 'Poppins';
+    transition: .25s;
+    font-size: 15px;
+}
+#btnAtualizar:hover {
+    transform: translateY(-2px);
+    opacity: .92;
+}
+/* RESULTADOS*/
+#resultado {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+/*CARD PRODUTO*/
+.produto {
+    position: relative;
+    background: var(--branco);
+    border-radius: 15px;
+    padding: 22px 28px;
+    box-shadow: var(--sombra);
+    transition: all .25s ease;
+    overflow: hidden;
+    animation: fade .35s ease;
+}
+.produto::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 6px;
+    height: 100%;
+    background: var(--primaria);
+}
+.produto:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 14px 30px rgba(0, 0, 0, .12);
+}
+/*CABEÇALHO DO PRODUTO*/
+.produto-topo {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 20px;
+}
+.produto-nome {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--primaria);
+    line-height: 1.4;
+    text-transform: uppercase;
+}
+.produto-preco {
+    font-size: 25px;
+    font-weight: 600;
+    color: var(--primaria);
+    white-space: nowrap;
+}
+.detalhes{
+    display:flex;
+    gap: 3px;
+}
+
+
+/*SEM RESULTADO*/
+#semResultado {
+    margin-top: 60px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+#semResultado div {
+    text-align: center;
+}
+#semResultado h2 {
+    font-size: 60px;
+}
+#semResultado h3 {
+    margin-top: 10px;
+    color: var(--primaria);
+}
+#semResultado span {
+    display: block;
+    margin-top: 10px;
+    color: #7f8ba0;
+}
+
+/*ANIMAÇÕES*/
+@keyframes fade {
+    from {
+        opacity: 0;
+        transform: translateY(15px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
