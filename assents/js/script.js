@@ -4,7 +4,7 @@ const CONFIG = {
   apiType: "google_drive",         // Atualizado para Google Drive
   
   // Google Drive API Configurações
-  apiKey: "AIzaSyA405vJpn5K60-mZhWTUAu5Y1Kmt8rVJi8", // Sua chave de API com permissão para Drive API
+  apiKey: "AIzaSyA40SvJpn5K6O-mZhWTUAu5YlKmt8rVJi8", // Sua chave de API com permissão para Drive API
   folderId: "1-PE0gn6fxi82vp3Fd01gzfkW3UigCc8o",                  // Cole aqui o ID da pasta onde está o PRODUTOS.xlsx
   
   // Cache
