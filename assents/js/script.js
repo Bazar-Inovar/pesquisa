@@ -62,19 +62,35 @@ function normalizeRows(rows) {
   });
 }
 
+// ---------- CARREGADOR SEGURO DE BIBLIOTECA ----------
+function forcarBibliotecaExcel() {
+  return new Promise((resolve) => {
+    if (typeof XLSX !== "undefined") return resolve();
+    atualizarStatus("Carregando dependência da planilha...");
+    const script = document.createElement("script");
+    script.src = "https://unpkg.com";
+    script.onload = () => resolve();
+    script.onerror = () => {
+      const backupScript = document.createElement("script");
+      backupScript.src = "https://cloudflare.com";
+      backupScript.onload = () => resolve();
+      document.head.appendChild(backupScript);
+    };
+    document.head.appendChild(script);
+  });
+}
+
 // ---------- FETCH: Google Drive via HTTP Puro ----------
 async function fetchFromGoogleDrive() {
   if (!CONFIG.apiKey || !CONFIG.folderId) {
     throw new Error("apiKey ou folderId não configurados para o Google Drive");
   }
 
-  if (typeof XLSX === "undefined") {
-    throw new Error("A biblioteca de Excel não foi carregada corretamente no HTML.");
-  }
+  // 1) Garante o carregamento interno da biblioteca antes de prosseguir
+  await forcarBibliotecaExcel();
 
   atualizarStatus("Localizando produtos.xlsx no Drive...");
   
-  // Procura o arquivo independentemente de estar maiúsculo ou minúsculo
   const queryDrive = "(name = 'produtos.xlsx' or name = 'PRODUTOS.xlsx') and '" + CONFIG.folderId + "' in parents and trashed = false";
   const listUrl = "https://googleapis.com" + encodeURIComponent(queryDrive) + "&key=" + CONFIG.apiKey;
   
@@ -90,13 +106,12 @@ async function fetchFromGoogleDrive() {
     throw new Error("Arquivo 'produtos.xlsx' não foi encontrado na pasta informada.");
   }
 
-  // Extração segura usando .at(0) para ler a lista de arquivos retornados
+  // Extração usando método nativo .at(0) seguro
   const primeiroItem = arquivos.at(0);
   const fileId = primeiroItem.id;
   
   atualizarStatus("Baixando arquivo Excel...");
 
-  // Baixa o conteúdo bruto da planilha
   const downloadUrl = "https://googleapis.com" + fileId + "?alt=media&key=" + CONFIG.apiKey;
   const response = await fetch(downloadUrl);
   
@@ -108,7 +123,6 @@ async function fetchFromGoogleDrive() {
   
   atualizarStatus("Convertendo Excel para JSON...");
 
-  // Converte a estrutura da tabela em JSON no front-end
   const workbook = XLSX.read(new Uint8Array(arrayBuffer), { type: "array" });
   const primeiraAbaNome = workbook.SheetNames.at(0); 
   const aba = workbook.Sheets[primeiraAbaNome];
