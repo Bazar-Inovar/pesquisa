@@ -62,7 +62,7 @@ function normalizeRows(rows) {
   });
 }
 
-// ---------- FETCH: Google Drive via HTTP Puro (Sem dependência de gapi) ----------
+// ---------- FETCH: Google Drive via HTTP Puro ----------
 async function fetchFromGoogleDrive() {
   if (!CONFIG.apiKey || !CONFIG.folderId) {
     throw new Error("apiKey ou folderId não configurados para o Google Drive");
@@ -89,7 +89,7 @@ async function fetchFromGoogleDrive() {
     throw new Error("Arquivo 'PRODUTOS.xlsx' não foi encontrado na pasta informada.");
   }
 
-  // Pega com segurança o ID do primeiro arquivo encontrado
+  // Pega com segurança o ID do primeiro arquivo encontrado na lista [0]
   const fileId = arquivos[0].id;
   atualizarStatus("Baixando arquivo Excel...");
 
