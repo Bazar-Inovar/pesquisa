@@ -62,36 +62,20 @@ function normalizeRows(rows) {
   });
 }
 
-// ---------- INJETOR GARANTIDO DA BIBLIOTECA EXCEL ----------
-function garantirBibliotecaExcel() {
-  return new Promise((resolve, reject) => {
-    if (typeof XLSX !== "undefined") return resolve();
-    atualizarStatus("Carregando dependências do Excel...");
-    const script = document.createElement("script");
-    script.src = "https://cloudflare.com";
-    script.async = true;
-    script.onload = () => {
-      atualizarStatus("Biblioteca Excel carregada com sucesso.");
-      resolve();
-    };
-    script.onerror = () => reject(new Error("Falha total ao injetar a biblioteca de Excel via CDN."));
-    document.head.appendChild(script);
-  });
-}
-
 // ---------- FETCH: Google Drive via HTTP Puro ----------
 async function fetchFromGoogleDrive() {
   if (!CONFIG.apiKey || !CONFIG.folderId) {
     throw new Error("apiKey ou folderId não configurados para o Google Drive");
   }
 
-  // 1) Força o carregamento da biblioteca internamente antes de rodar a busca
-  await garantirBibliotecaExcel();
+  if (typeof XLSX === "undefined") {
+    throw new Error("A biblioteca de Excel não foi carregada corretamente no HTML.");
+  }
 
-  atualizarStatus("Localizando PRODUTOS.xlsx no Drive...");
+  atualizarStatus("Localizando produtos.xlsx no Drive...");
   
-  // 2) Busca o arquivo na pasta usando string concatenada limpa
-  const queryDrive = "name = 'produtos.xlsx' and '" + CONFIG.folderId + "' in parents and trashed = false";
+  // Procura o arquivo independentemente de estar maiúsculo ou minúsculo
+  const queryDrive = "(name = 'produtos.xlsx' or name = 'PRODUTOS.xlsx') and '" + CONFIG.folderId + "' in parents and trashed = false";
   const listUrl = "https://googleapis.com" + encodeURIComponent(queryDrive) + "&key=" + CONFIG.apiKey;
   
   const listResponse = await fetch(listUrl);
@@ -103,16 +87,16 @@ async function fetchFromGoogleDrive() {
   const arquivos = listData.files;
   
   if (!arquivos || arquivos.length === 0) {
-    throw new Error("Arquivo 'PRODUTOS.xlsx' não foi encontrado na pasta informada.");
+    throw new Error("Arquivo 'produtos.xlsx' não foi encontrado na pasta informada.");
   }
 
-  // Extração segura do primeiro elemento retornado
+  // Extração segura usando .at(0) para ler a lista de arquivos retornados
   const primeiroItem = arquivos.at(0);
   const fileId = primeiroItem.id;
   
   atualizarStatus("Baixando arquivo Excel...");
 
-  // 3) Baixa o conteúdo do arquivo binário direto por requisição nativa
+  // Baixa o conteúdo bruto da planilha
   const downloadUrl = "https://googleapis.com" + fileId + "?alt=media&key=" + CONFIG.apiKey;
   const response = await fetch(downloadUrl);
   
@@ -124,9 +108,8 @@ async function fetchFromGoogleDrive() {
   
   atualizarStatus("Convertendo Excel para JSON...");
 
-  // 4) Converte o Excel em JSON no navegador
+  // Converte a estrutura da tabela em JSON no front-end
   const workbook = XLSX.read(new Uint8Array(arrayBuffer), { type: "array" });
-  
   const primeiraAbaNome = workbook.SheetNames.at(0); 
   const aba = workbook.Sheets[primeiraAbaNome];
   
