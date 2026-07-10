@@ -62,19 +62,35 @@ function normalizeRows(rows) {
   });
 }
 
+// ---------- INJETOR GARANTIDO DA BIBLIOTECA EXCEL ----------
+function garantirBibliotecaExcel() {
+  return new Promise((resolve, reject) => {
+    if (typeof XLSX !== "undefined") return resolve();
+    atualizarStatus("Carregando dependências do Excel...");
+    const script = document.createElement("script");
+    script.src = "https://cloudflare.com";
+    script.async = true;
+    script.onload = () => {
+      atualizarStatus("Biblioteca Excel carregada com sucesso.");
+      resolve();
+    };
+    script.onerror = () => reject(new Error("Falha total ao injetar a biblioteca de Excel via CDN."));
+    document.head.appendChild(script);
+  });
+}
+
 // ---------- FETCH: Google Drive via HTTP Puro ----------
 async function fetchFromGoogleDrive() {
   if (!CONFIG.apiKey || !CONFIG.folderId) {
     throw new Error("apiKey ou folderId não configurados para o Google Drive");
   }
 
-  if (typeof XLSX === "undefined") {
-    throw new Error("A biblioteca de Excel não foi carregada no HTML.");
-  }
+  // 1) Força o carregamento da biblioteca internamente antes de rodar a busca
+  await garantirBibliotecaExcel();
 
   atualizarStatus("Localizando PRODUTOS.xlsx no Drive...");
   
-  // 1) Busca o arquivo na pasta usando string concatenada limpa (evita erros do interpretador)
+  // 2) Busca o arquivo na pasta usando string concatenada limpa
   const queryDrive = "name = 'produtos.xlsx' and '" + CONFIG.folderId + "' in parents and trashed = false";
   const listUrl = "https://googleapis.com" + encodeURIComponent(queryDrive) + "&key=" + CONFIG.apiKey;
   
@@ -96,7 +112,7 @@ async function fetchFromGoogleDrive() {
   
   atualizarStatus("Baixando arquivo Excel...");
 
-  // 2) Baixa o conteúdo do arquivo binário direto por requisição nativa sem chaves quebradas
+  // 3) Baixa o conteúdo do arquivo binário direto por requisição nativa
   const downloadUrl = "https://googleapis.com" + fileId + "?alt=media&key=" + CONFIG.apiKey;
   const response = await fetch(downloadUrl);
   
@@ -108,7 +124,7 @@ async function fetchFromGoogleDrive() {
   
   atualizarStatus("Convertendo Excel para JSON...");
 
-  // 3) Converte o Excel em JSON no navegador usando a biblioteca carregada no HTML
+  // 4) Converte o Excel em JSON no navegador
   const workbook = XLSX.read(new Uint8Array(arrayBuffer), { type: "array" });
   
   const primeiraAbaNome = workbook.SheetNames.at(0); 
