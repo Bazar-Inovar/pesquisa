@@ -3,8 +3,8 @@ const CONFIG = {
   useApi: true,                    // true para buscar remotamente; false para usar cache apenas
   apiType: "json_endpoint",        // "google_sheets" or "json_endpoint"
   // Google Sheets API v4 (se apiType === "google_sheets")
-  sheetId: "SEU_SHEET_ID_AQUI",
-  apiKey: "SUA_API_KEY_AQUI",
+  sheetId: "1-PE0gn6fx82vp3Fd01gzfkW3UigCc80",
+  apiKey: "AIzaSyA405vJpn5K60-mZhWTUAu5Y1Kmt8rVJi8",
   range: "A1:Z",                   // range a ser lido na Sheets API
   // Endpoint JSON (se apiType === "json_endpoint")
   endpointUrl: "https://api.seuservidor.com/produtos", // deve retornar array de objetos
