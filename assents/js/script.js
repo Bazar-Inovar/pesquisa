@@ -23,7 +23,6 @@ const semResultado = document.getElementById("semResultado");
 // ---------- ESTADO GLOBAL ----------
 let produtos = [];
 let ultimaAtualizacao = null;
-let gapiCarregado = false;
 
 // ---------- HELPERS ----------
 function normalizeKey(str) {
@@ -63,97 +62,54 @@ function normalizeRows(rows) {
   });
 }
 
-// ---------- INJETOR AUTOMÁTICO DE SCRIPT ----------
-function carregarScriptExterno(url) {
-  return new Promise((resolve, reject) => {
-    const script = document.createElement("script");
-    script.src = url;
-    script.async = true;
-    script.onload = () => resolve();
-    script.onerror = () => reject(new Error(`Falha ao injetar script: ${url}`));
-    document.head.appendChild(script);
-  });
-}
-
-// ---------- INICIALIZADOR DO GOOGLE API (GAPI) ----------
-async function inicializarGapi() {
-  if (gapiCarregado) return;
-
-  atualizarStatus("Injetando dependências do Google e Excel...");
-  
-  // Injeta a biblioteca XLSX se ela não existir no escopo global
-  if (typeof XLSX === "undefined") {
-    await carregarScriptExterno("https://cloudflare.com");
-  }
-
-  // Injeta a biblioteca GAPI oficial correta se ela não existir
-  if (typeof gapi === "undefined") {
-    await carregarScriptExterno("https://google.com");
-  }
-
-  return new Promise((resolve, reject) => {
-    gapi.load("client", () => {
-      gapi.client.init({
-        apiKey: CONFIG.apiKey,
-        discoveryDocs: ["https://googleapis.com"],
-      })
-      .then(() => {
-        gapiCarregado = true;
-        resolve();
-      })
-      .catch(err => reject(err));
-    });
-  });
-}
-
-// ---------- FETCH: Google Drive (Busca, Download e Conversão XLSX) ----------
+// ---------- FETCH: Google Drive via HTTP Puro (Sem dependência de gapi) ----------
 async function fetchFromGoogleDrive() {
   if (!CONFIG.apiKey || !CONFIG.folderId) {
     throw new Error("apiKey ou folderId não configurados para o Google Drive");
   }
 
-  // 1) Garante injeção e inicialização do ecossistema Google
-  await inicializarGapi();
+  if (typeof XLSX === "undefined") {
+    throw new Error("A biblioteca de Excel não foi carregada no HTML.");
+  }
 
   atualizarStatus("Localizando PRODUTOS.xlsx no Drive...");
   
-  // 2) Procura o arquivo pelo nome exato dentro da pasta configurada
-  const q = `name = 'PRODUTOS.xlsx' and '${CONFIG.folderId}' in parents and trashed = false`;
-  const listaResponse = await gapi.client.drive.files.list({
-    q: q,
-    fields: "files(id, name)",
-    pageSize: 1
-  });
-
-  const arquivos = listaResponse.result.files;
+  // 1) Busca o arquivo na pasta usando uma requisição HTTP direta para o Google
+  const listUrl = `https://googleapis.com{encodeURIComponent(`name = 'PRODUTOS.xlsx' and '${CONFIG.folderId}' in parents and trashed = false`)}&key=${CONFIG.apiKey}`;
+  const listResponse = await fetch(listUrl);
+  
+  if (!listResponse.ok) {
+    throw new Error("Falha ao conectar com o Google Drive. Verifique a sua apiKey.");
+  }
+  
+  const listData = await listResponse.json();
+  const arquivos = listData.files;
+  
   if (!arquivos || arquivos.length === 0) {
     throw new Error("Arquivo 'PRODUTOS.xlsx' não foi encontrado na pasta informada.");
   }
 
-  // Ajustado com [0] para pegar o primeiro arquivo retornado
+  // Pega com segurança o ID do primeiro arquivo encontrado
   const fileId = arquivos[0].id;
   atualizarStatus("Baixando arquivo Excel...");
 
-  // 3) Faz o download do arquivo binário usando a API Key pública
+  // 2) Baixa o conteúdo do arquivo binário direto por requisição nativa
   const downloadUrl = `https://googleapis.com{fileId}?alt=media&key=${CONFIG.apiKey}`;
   const response = await fetch(downloadUrl);
   
   if (!response.ok) {
-    throw new Error("Falha ao baixar o arquivo binário do Drive.");
+    throw new Error("Falha ao baixar os dados binários do arquivo no Drive.");
   }
 
   const arrayBuffer = await response.arrayBuffer();
   
   atualizarStatus("Convertendo Excel para JSON...");
 
-  // 4) Faz a leitura da estrutura do Excel puro diretamente no Navegador
+  // 3) Converte o Excel em JSON no navegador usando a biblioteca carregada no HTML
   const workbook = XLSX.read(new Uint8Array(arrayBuffer), { type: "array" });
-  
-  // Ajustado com [0] para obter o nome da primeira aba disponível
   const primeiraAbaNome = workbook.SheetNames[0]; 
   const aba = workbook.Sheets[primeiraAbaNome];
   
-  // Transforma as linhas estruturadas em formato JSON legível
   const jsonBruto = XLSX.utils.sheet_to_json(aba);
 
   return normalizeRows(jsonBruto);
