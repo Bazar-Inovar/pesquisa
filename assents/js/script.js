@@ -7,7 +7,6 @@ const resultado = document.getElementById("resultado");
 const loading = document.getElementById("loading");
 const app = document.getElementById("app");
 const statusTexto = document.getElementById("statusTexto");
-const btnAtualizar = document.getElementById("btnAtualizar");
 const semResultado = document.getElementById("semResultado");
 
 let produtos = [];
@@ -71,7 +70,7 @@ function renderizarProdutos(lista){
       <strong>R$ ${Number(p.valor||0).toFixed(2).replace(".",",")}</strong>
     </div>
     <div class="detalhes">
-      <p>Qtd: ${p.quantidade}</p>
+      <p>Qtd: ${p.quantidade}</p> |
       <p>Cód: ${p.codigo || "-"}</p>
     </div>
   </div>`).join("");
@@ -86,8 +85,6 @@ pesquisa?.addEventListener("input",()=>{
  ).slice(0,30);
  renderizarProdutos(filtrados);
 });
-
-btnAtualizar?.addEventListener("click", carregarProdutos);
 
 async function init(){
  loading?.classList.remove("hidden");
