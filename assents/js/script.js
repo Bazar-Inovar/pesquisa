@@ -79,10 +79,22 @@ function renderizarProdutos(lista){
 pesquisa?.addEventListener("input",()=>{
  const t = pesquisa.value.toLowerCase().trim();
  if(!t){resultado.innerHTML=""; if(semResultado) semResultado.classList.add("hidden"); return;}
- const filtrados = produtos.filter(p=>
-   (p.produto||"").toLowerCase().includes(t) ||
-   String(p.codigo||"").toLowerCase().includes(t)
- ).slice(0,30);
+ 
+ const filtrados = produtos
+   .filter(p =>
+     (p.produto||"").toLowerCase().includes(t) ||
+     String(p.codigo||"").toLowerCase().includes(t)
+   )
+   .sort((a, b) => {
+     // Garante que valores nulos ou vazios fiquem no final e não quebrem a ordenação
+     const nomeA = (a.produto || "").toLowerCase();
+     const nomeB = (b.produto || "").toLowerCase();
+     
+     // localeCompare lida perfeitamente com acentos e caracteres especiais do português
+     return nomeA.localeCompare(nomeB);
+   })
+   .slice(0, 30);
+
  renderizarProdutos(filtrados);
 });
 
