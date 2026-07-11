@@ -10,6 +10,7 @@
     }
     .produto-nome {
         font-size: 16px;
+        width: 75px;
     }
     .produto-preco {
         font-size: 18px;
