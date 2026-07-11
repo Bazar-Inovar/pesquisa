@@ -1,5 +1,5 @@
 const CONFIG = {
-  fileUrl: "/produtos.xlsx"
+  fileUrl: "produtos.xlsx"
 };
 
 const pesquisa = document.getElementById("pesquisa");
