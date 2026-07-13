@@ -3,7 +3,7 @@
         font-size: 25px;
     }
     .produto {
-        padding: 16px 22px;
+        padding: 15px;
     }
     .produto-topo {
         gap: 15px;
@@ -12,8 +12,8 @@
         font-size: 16px;
     }
     .produto strong {
-        font-size: 18px;
-        width: 75px;
+        font-size: 15px;
+        width: 100%;
     }
     .detalhes{
         display:flex;
