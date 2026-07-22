@@ -76,16 +76,23 @@ function renderizarProdutos(lista){
   </div>`).join("");
 }
 
-pesquisa?.addEventListener("input",()=>{
- const t = pesquisa.value.toLowerCase().trim();
- if(!t){resultado.innerHTML=""; if(semResultado) semResultado.classList.add("hidden"); return;}
- const filtrados = produtos.filter(p=>
-   (p.produto||"").toLowerCase().includes(t) ||
-   String(p.codigo||"").toLowerCase().includes(t)
- );
- renderizarProdutos(filtrados);
-});
+pesquisa?.addEventListener("input", () => {
+  const t = pesquisa.value.toLowerCase().trim();
 
+  // Menos de 4 caracteres: não pesquisa
+  if (t.length < 4) {
+      resultado.innerHTML = "";
+      if (semResultado) semResultado.classList.add("hidden");
+      return;
+  }
+
+  const filtrados = produtos.filter(p =>
+      (p.produto || "").toLowerCase().includes(t) ||
+      String(p.codigo || "").toLowerCase().includes(t)
+  );
+
+  renderizarProdutos(filtrados);
+});
 async function init(){
  loading?.classList.remove("hidden");
  app?.classList.add("hidden");
