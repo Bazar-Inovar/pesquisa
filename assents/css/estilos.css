@@ -187,10 +187,6 @@ header p {
     height: 100%;
     background: var(--primaria);
 }
-.produto:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 14px 30px rgba(0, 0, 0, .12);
-}
 /*CABEÇALHO DO PRODUTO*/
 .produto-topo {
     display: flex;
