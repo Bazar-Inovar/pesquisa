@@ -80,7 +80,7 @@ header {
 }
 
 .logo {
-    width: 180px;
+    width: 150px;
     border-radius: 50%;
     margin-bottom: 20px;
     object-fit: contain;
@@ -98,6 +98,11 @@ header p {
 }
 .pesquisa {
     margin-bottom: 30px;
+    position: sticky;
+    top: 10px;
+    z-index: 1;
+    border: 1px solid #3a4e67;
+    border-radius: 15px;
 }
 .inputPesquisa {
     background: white;
@@ -107,10 +112,6 @@ header p {
     align-items: center;
     padding: 0 20px;
     transition: .3s;
-}
-.inputPesquisa:focus-within {
-    transform: translateY(-2px);
-    box-shadow: 0 12px 30px rgba(58, 78, 103, .18);
 }
 .inputPesquisa svg {
     color: var(--primaria);
