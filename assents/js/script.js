@@ -80,7 +80,7 @@ pesquisa?.addEventListener("input", () => {
   const t = pesquisa.value.toLowerCase().trim();
 
   // Menos de 4 caracteres: não pesquisa
-  if (t.length < 4) {
+  if (t.length < 3) {
       resultado.innerHTML = "";
       if (semResultado) semResultado.classList.add("hidden");
       return;
